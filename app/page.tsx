@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   Box,
   Button,
@@ -17,6 +18,7 @@ const MotionPaper = motion.create(Paper);
 const MotionTypography = motion.create(Typography);
 
 export default function Home() {
+  const router = useRouter();
   return (
     <Box
       sx={{
@@ -80,6 +82,10 @@ export default function Home() {
                     boxShadow: "0 0 15px rgba(156, 39, 176, 0.7)",
                   }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    router.push("/read");
+                    console.log("Button clicked");
+                  }}
                   sx={{
                     px: 4,
                     py: 1.5,
