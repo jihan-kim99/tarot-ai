@@ -8,12 +8,25 @@ export interface TarotCard {
   name: string;
 }
 
+// Interface for structured reading response
+export interface StructuredPositionReading {
+  position: number;
+  card: string;
+  description: string;
+  interpretation: string;
+}
+
+export interface StructuredReading {
+  positions: StructuredPositionReading[];
+  overall: string;
+}
+
 export interface TarotReading {
   cards: TarotCard[]; // Changed from single card to array of cards
   spreadType: "single" | "universal6";
   question: string;
   userInfo: string;
-  interpretation: string;
+  interpretation: string | StructuredReading; // Can be either string or structured data
   date: string;
 }
 

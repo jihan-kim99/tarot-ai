@@ -59,7 +59,8 @@ export const CardFace = styled(motion.div)`
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 10px;
+  padding: 0;
+  overflow: hidden;
 `;
 
 export const CardBack = styled(CardFace)`
@@ -72,4 +73,10 @@ export const CardBack = styled(CardFace)`
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 5px;
   }
+`;
+
+export const CardFront = styled(CardFace)`
+  background: #fff;
+  overflow: hidden;
+  transform: rotateY(180deg);
 `;

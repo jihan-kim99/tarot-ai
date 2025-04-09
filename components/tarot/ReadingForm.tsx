@@ -11,6 +11,7 @@ import {
   CardContent,
 } from "@mui/material";
 import { tarotCards } from "./TarotData";
+import Image from "next/image";
 
 interface ReadingFormProps {
   selectedCardId?: number; // Single card ID (legacy support)
@@ -106,19 +107,36 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
                   <CardMedia
                     component="div"
                     sx={{
-                      height: 100,
-                      bgcolor: "secondary.dark",
+                      height: 180,
+                      width: "100%",
+                      position: "relative",
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
                     }}
                   >
-                    <Typography variant="h6" color="white">
-                      {tarotCards[cardId].name}
-                    </Typography>
+                    <Image
+                      src={tarotCards[cardId].image}
+                      alt={tarotCards[cardId].name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      style={{
+                        objectFit: "contain",
+                      }}
+                    />
                   </CardMedia>
                   <CardContent>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: "bold", textAlign: "center" }}
+                    >
+                      {tarotCards[cardId].name}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
                       {positionDescriptions[index]}
                     </Typography>
                   </CardContent>
@@ -127,10 +145,37 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
             ))}
           </Grid>
         ) : (
-          <Typography variant="h6" align="center" gutterBottom>
-            You selected:{" "}
-            {cardIds.length > 0 ? tarotCards[cardIds[0]].name : "No card"}
-          </Typography>
+          <Box sx={{ textAlign: "center", mb: 3 }}>
+            {cardIds.length > 0 && (
+              <Box
+                sx={{
+                  maxWidth: "240px",
+                  height: "360px",
+                  position: "relative",
+                  margin: "0 auto",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  boxShadow: 3,
+                }}
+              >
+                <Image
+                  src={tarotCards[cardIds[0]].image}
+                  alt={tarotCards[cardIds[0]].name}
+                  fill
+                  sizes="240px"
+                  style={{
+                    objectFit: "contain",
+                  }}
+                  priority
+                />
+              </Box>
+            )}
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              {cardIds.length > 0
+                ? tarotCards[cardIds[0]].name
+                : "No card selected"}
+            </Typography>
+          </Box>
         )}
 
         <Typography variant="body2" sx={{ mt: 4 }} align="center">

@@ -15,6 +15,8 @@ import {
 } from "@mui/material";
 import { tarotCards } from "./TarotData";
 import ReactMarkdown from "react-markdown";
+import { StructuredReading } from "@/context/useTarotContext";
+import Image from "next/image";
 
 // Position descriptions for Universal 6 Card Spread
 const positionDescriptions = [
@@ -31,7 +33,7 @@ interface ReadingResultProps {
   selectedCardIds?: number[]; // Multiple card IDs for spreads
   question: string;
   reading: {
-    interpretation: string;
+    interpretation: string | StructuredReading;
   };
   onNewReading: () => void;
   onSaveReading: () => void;
@@ -57,23 +59,35 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
       ? [selectedCardId]
       : [];
 
-  // For Universal 6 Card Spread, split the interpretation into sections
+  // Check if we have structured data
+  const isStructured =
+    typeof reading.interpretation === "object" &&
+    reading.interpretation !== null &&
+    "positions" in reading.interpretation &&
+    "overall" in reading.interpretation;
+
+  // For Universal 6 Card Spread, get interpretation sections based on format
   let interpretationSections: string[] = [];
 
-  if (spreadType === "universal6" && reading.interpretation) {
+  if (
+    !isStructured &&
+    spreadType === "universal6" &&
+    typeof reading.interpretation === "string"
+  ) {
+    // Legacy approach for string-based interpretation
     // Try to parse the interpretation which might be formatted with sections
-    // This is a simple approach assuming sections are separated by double newlines or specific headers
+    const interpretationText = reading.interpretation;
 
     // First attempt: Try to split by specific section markers
     const sectionRegex =
       /\[Position \d+\]|\[Card \d+\]|Position \d+:|Card \d+:/g;
-    if (sectionRegex.test(reading.interpretation)) {
-      interpretationSections = reading.interpretation
+    if (sectionRegex.test(interpretationText)) {
+      interpretationSections = interpretationText
         .split(sectionRegex)
         .filter((section) => section.trim().length > 0);
     } else {
       // Second attempt: Split by double newlines and try to create balanced sections
-      const paragraphs = reading.interpretation.split(/\n\s*\n/);
+      const paragraphs = interpretationText.split(/\n\s*\n/);
       const totalParagraphs = paragraphs.length;
 
       if (totalParagraphs >= cardIds.length) {
@@ -94,13 +108,21 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
       } else {
         // Fallback: Just use the whole interpretation for all sections
         interpretationSections = new Array(cardIds.length).fill(
-          reading.interpretation
+          interpretationText
         );
       }
     }
+  } else if (isStructured) {
+    // Use structured data format
+    const structuredData = reading.interpretation as StructuredReading;
+    interpretationSections = structuredData.positions.map(
+      (pos) => pos.interpretation
+    );
   } else {
     // Single card reading, just use the whole interpretation
-    interpretationSections = [reading.interpretation];
+    interpretationSections = [
+      typeof reading.interpretation === "string" ? reading.interpretation : "",
+    ];
   }
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -108,6 +130,11 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
   };
 
   if (spreadType === "universal6") {
+    // Get the structured data if available
+    const structuredData = isStructured
+      ? (reading.interpretation as StructuredReading)
+      : null;
+
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -173,6 +200,24 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
                     <Typography variant="overline">
                       Position {selectedTabIndex + 1}
                     </Typography>
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "200px",
+                        position: "relative",
+                        my: 2,
+                        borderRadius: 1,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <Image
+                        src={tarotCards[cardIds[selectedTabIndex]].image}
+                        alt={tarotCards[cardIds[selectedTabIndex]].name}
+                        fill
+                        sizes="(max-width: 600px) 100vw, 300px"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </Box>
                     <Typography variant="h5" gutterBottom>
                       {tarotCards[cardIds[selectedTabIndex]].name}
                     </Typography>
@@ -223,6 +268,22 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
                     <Typography variant="overline" sx={{ fontSize: "0.7rem" }}>
                       Position {index + 1}
                     </Typography>
+                    <Box
+                      sx={{
+                        width: "100%",
+                        height: "80px",
+                        position: "relative",
+                        my: 1,
+                      }}
+                    >
+                      <Image
+                        src={tarotCards[cardId].image}
+                        alt={tarotCards[cardId].name}
+                        fill
+                        sizes="(max-width: 600px) 33vw, 100px"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </Box>
                     <Typography variant="body2" sx={{ fontWeight: "bold" }}>
                       {tarotCards[cardId].name}
                     </Typography>
@@ -235,7 +296,15 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
               <Chip label="Complete Reading" />
             </Divider>
 
-            <ReactMarkdown>{reading.interpretation}</ReactMarkdown>
+            {isStructured ? (
+              <ReactMarkdown>{structuredData?.overall}</ReactMarkdown>
+            ) : (
+              <ReactMarkdown>
+                {typeof reading.interpretation === "string"
+                  ? reading.interpretation
+                  : ""}
+              </ReactMarkdown>
+            )}
           </Box>
         )}
 
@@ -269,6 +338,37 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
         </Typography>
       </Box>
 
+      {cardIds.length > 0 && (
+        <Box
+          sx={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            mb: 4,
+          }}
+        >
+          <Box
+            sx={{
+              width: "200px",
+              height: "300px",
+              position: "relative",
+              borderRadius: 2,
+              overflow: "hidden",
+              boxShadow: 3,
+            }}
+          >
+            <Image
+              src={tarotCards[cardIds[0]].image}
+              alt={tarotCards[cardIds[0]].name}
+              fill
+              sizes="200px"
+              style={{ objectFit: "contain" }}
+              priority
+            />
+          </Box>
+        </Box>
+      )}
+
       <Box
         sx={{
           backgroundColor: "white",
@@ -278,7 +378,11 @@ export const ReadingResult: React.FC<ReadingResultProps> = ({
           mb: 4,
         }}
       >
-        <ReactMarkdown>{reading.interpretation}</ReactMarkdown>
+        <ReactMarkdown>
+          {typeof reading.interpretation === "string"
+            ? reading.interpretation
+            : ""}
+        </ReactMarkdown>
       </Box>
 
       <Box sx={{ display: "flex", justifyContent: "space-between" }}>

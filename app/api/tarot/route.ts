@@ -65,6 +65,7 @@ export async function POST(request: Request) {
     });
 
     let prompt = "";
+    let structuredOutput = false;
 
     // Handle different spread types
     if (
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
       Array.isArray(cards) &&
       cards.length === 6
     ) {
+      structuredOutput = true;
       prompt = [
         `You are an expert tarot card reader. You will interpret the Universal 6 Card Spread.`,
         `About the querent: ${userInfo}`,
@@ -82,9 +84,21 @@ export async function POST(request: Request) {
           (card, i) =>
             `Position ${i + 1} (${positionDescriptions[i]}): ${card.name}`
         ),
-        `Provide a comprehensive reading that first interprets each card in its position, then provides an overall synthesis.`,
-        `Format your response with clear sections for each position and a conclusion.`,
-        `For each position, explain what the card means in that specific position and how it relates to the querent's question.`,
+        `RESPONSE FORMAT: Your response must be valid JSON with the following structure:`,
+        `{
+  "positions": [
+    {
+      "position": 1,
+      "card": "Card Name",
+      "description": "Position description",
+      "interpretation": "Detailed interpretation for this position"
+    },
+    // ... repeat for all 6 positions
+  ],
+  "overall": "Overall synthesis of the reading that ties all positions together"
+}`,
+        `Each position's interpretation should explain what the card means in that specific position and how it relates to the querent's question.`,
+        `The "overall" field should provide a comprehensive synthesis that ties all positions together.`,
         `Answer in the language of the querent's question.`,
         `Remember that the first reading is always the most appropriate - emphasize accepting this reading rather than seeking another.`,
       ].join("\n");
@@ -149,10 +163,31 @@ export async function POST(request: Request) {
 
       const result = await chat.sendMessage(prompt);
       const response = await result.response;
-
       const text = response.text();
 
-      return NextResponse.json({ response: text });
+      // For Universal 6 Card Spread, try to parse the response as JSON
+      if (structuredOutput) {
+        try {
+          // Extract JSON if it's wrapped in code blocks
+          const jsonMatch =
+            text.match(/```(?:json)?([\s\S]*?)```/) ||
+            text.match(/\{[\s\S]*\}/);
+          const jsonContent = jsonMatch
+            ? jsonMatch[0].replace(/```json|```/g, "")
+            : text;
+
+          // Parse the JSON content
+          const parsedResponse = JSON.parse(jsonContent);
+          return NextResponse.json({ response: parsedResponse });
+        } catch (jsonError) {
+          console.error("Failed to parse JSON response:", jsonError);
+          // Fallback to returning the text response
+          return NextResponse.json({ response: text, structured: false });
+        }
+      } else {
+        // For single card reading, return text as before
+        return NextResponse.json({ response: text });
+      }
     } catch (apiError: unknown) {
       console.error("Google API Error:", apiError);
       if (apiError instanceof GoogleGenerativeAIFetchError) {

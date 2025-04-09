@@ -1,8 +1,9 @@
 // TarotCard.tsx - Individual tarot card component
 import React from "react";
 import { TarotCard as TarotCardType } from "./TarotData";
-import { CardWrapper, CardBack } from "./StyledComponents";
+import { CardWrapper, CardBack, CardFront } from "./StyledComponents";
 import { Box, Typography } from "@mui/material";
+import Image from "next/image";
 
 interface TarotCardProps {
   card: TarotCardType;
@@ -122,6 +123,19 @@ export const TarotCard: React.FC<TarotCardProps> = ({
           </Box>
         )}
       </CardBack>
+
+      {isSelected && (
+        <CardFront>
+          <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
+            <Image
+              src={card.image}
+              alt={card.name}
+              fill
+              style={{ objectFit: "cover" }}
+            />
+          </Box>
+        </CardFront>
+      )}
     </CardWrapper>
   );
 };
