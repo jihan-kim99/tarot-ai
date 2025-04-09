@@ -1,119 +1,129 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import styled from "@emotion/styled";
-import { Box, Typography, Button } from "@mui/material";
-
-// Define tarot card data
-const tarotCards = [
-  { id: 0, name: "The Fool" },
-  { id: 1, name: "The Magician" },
-  { id: 2, name: "The High Priestess" },
-  { id: 3, name: "The Empress" },
-  { id: 4, name: "The Emperor" },
-  { id: 5, name: "The Hierophant" },
-  { id: 6, name: "The Lovers" },
-  { id: 7, name: "The Chariot" },
-  { id: 8, name: "Strength" },
-  { id: 9, name: "The Hermit" },
-  { id: 10, name: "Wheel of Fortune" },
-  { id: 11, name: "Justice" },
-  { id: 12, name: "The Hanged Man" },
-  { id: 13, name: "Death" },
-  { id: 14, name: "Temperance" },
-  { id: 15, name: "The Devil" },
-  { id: 16, name: "The Tower" },
-  { id: 17, name: "The Star" },
-  { id: 18, name: "The Moon" },
-  { id: 19, name: "The Sun" },
-  { id: 20, name: "Judgement" },
-  { id: 21, name: "The World" },
-];
-
-// Styled components
-const CardContainer = styled(Box)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 80px 0;
-  min-height: 60vh;
-  position: relative;
-  perspective: 1000px;
-`;
-
-const CardFan = styled(Box)`
-  position: relative;
-  width: 400px;
-  height: 300px;
-  display: flex;
-  justify-content: center;
-`;
-
-const CardWrapper = styled(motion.div)<{ $index: number; $total: number }>`
-  width: 120px;
-  height: 200px;
-  position: absolute;
-  cursor: pointer;
-  transform-style: preserve-3d;
-  left: ${({ $index, $total }) => {
-    // Calculate position to create a fan effect
-    const centerIndex = Math.floor($total / 2);
-    const offset = ($index - centerIndex) * 20;
-    return `calc(50% - 60px + ${offset}px)`;
-  }};
-  top: ${({ $index }) => {
-    // Add some vertical variation
-    const row = Math.floor($index / 7);
-    return `${row * 40}px`;
-  }};
-  z-index: ${({ $index }) => $index};
-`;
-
-const CardFace = styled(motion.div)`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 10px;
-`;
-
-const CardBack = styled(CardFace)`
-  background: linear-gradient(135deg, #2b5876, #4e4376);
-  &::after {
-    content: "";
-    position: absolute;
-    width: 80%;
-    height: 80%;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 5px;
-  }
-`;
-
-const CardFront = styled(CardFace)`
-  background-color: white;
-  transform: rotateY(180deg);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 15px;
-`;
+import React, { useState, useEffect } from "react";
+import { AnimatePresence } from "framer-motion";
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Button,
+  ToggleButtonGroup,
+  ToggleButton,
+  Paper,
+} from "@mui/material";
+import { useTarot } from "@/context/useTarotContext";
+import TarotCardDeck from "@/components/tarot/TarotCardDeck";
+import ReadingForm from "@/components/tarot/ReadingForm";
+import ReadingResult from "@/components/tarot/ReadingResult";
+import QuestionForm from "@/components/tarot/QuestionForm";
+import { CardContainer } from "@/components/tarot/StyledComponents";
+import { tarotCards } from "@/components/tarot/TarotData";
 
 export default function ReadPage() {
-  const [selectedCard, setSelectedCard] = useState<number | null>(null);
+  // State for tracking selected cards
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null); // Legacy single card
+  const [selectedCardIds, setSelectedCardIds] = useState<number[]>([]); // Multiple cards for spreads
 
-  const handleCardClick = (cardId: number) => {
-    setSelectedCard(cardId);
+  // User input and display state
+  const [question, setQuestion] = useState<string>("");
+  const [userInfo, setUserInfo] = useState<string>("");
+  const [stage, setStage] = useState<
+    "question" | "spread" | "card" | "confirm" | "result"
+  >("question");
+
+  // Spread type selection
+  const [spreadType, setSpreadType] = useState<"single" | "universal6">(
+    "single"
+  );
+
+  // Add clientSide state to prevent hydration mismatch
+  const [isClient, setIsClient] = useState(false);
+
+  // Use the tarot context
+  const {
+    isLoading,
+    error,
+    reading,
+    getReading,
+    clearReading,
+    savePastReading,
+  } = useTarot();
+
+  // Run animations only after component has mounted on the client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Handle question form submission
+  const handleQuestionSubmit = (info: string, q: string) => {
+    setUserInfo(info);
+    setQuestion(q);
+    setStage("spread"); // Go to spread selection instead of directly to cards
   };
 
+  // Handle spread type selection
+  const handleSpreadTypeChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newSpreadType: "single" | "universal6" | null
+  ) => {
+    if (newSpreadType !== null) {
+      setSpreadType(newSpreadType);
+      // Clear any previously selected cards
+      setSelectedCardId(null);
+      setSelectedCardIds([]);
+      setStage("card");
+    }
+  };
+
+  // Handle card click in single card mode
+  const handleCardClick = (cardId: number) => {
+    setSelectedCardId(cardId);
+    setStage("confirm");
+  };
+
+  // Handle multiple card selection for spreads
+  const handleMultipleCardsSelected = (cardIds: number[]) => {
+    setSelectedCardIds(cardIds);
+    setStage("confirm");
+  };
+
+  // Reset all state for a new reading
   const handleReset = () => {
-    setSelectedCard(null);
+    setSelectedCardId(null);
+    setSelectedCardIds([]);
+    setQuestion("");
+    setUserInfo("");
+    setSpreadType("single");
+    setStage("question");
+    clearReading();
+  };
+
+  // Submit the reading request to the API
+  const handleReadingSubmit = async () => {
+    if (spreadType === "universal6" && selectedCardIds.length === 6) {
+      // Submit multiple cards for Universal 6 Card Spread
+      const cards = selectedCardIds.map((id) => tarotCards[id]);
+      await getReading(cards, question, userInfo, "universal6");
+      setStage("result");
+    } else if (selectedCardId !== null) {
+      // Legacy single card reading
+      const card = tarotCards[selectedCardId];
+      await getReading([card], question, userInfo, "single");
+      setStage("result");
+    }
+  };
+
+  // Go back to card selection
+  const handleGoBackToCards = () => {
+    setSelectedCardId(null);
+    setSelectedCardIds([]);
+    setStage("card");
+  };
+
+  // Save the reading and start over
+  const handleSaveAndClose = () => {
+    savePastReading();
+    handleReset();
   };
 
   return (
@@ -122,107 +132,152 @@ export default function ReadPage() {
         Tarot Reading
       </Typography>
       <Typography variant="body1" align="center" sx={{ mb: 4 }}>
-        Select a card to reveal your reading
+        {stage === "question" && "First, share your question for the cards"}
+        {stage === "spread" && "Choose your reading type"}
+        {stage === "card" &&
+          spreadType === "single" &&
+          "Select a card to reveal your reading"}
+        {stage === "card" &&
+          spreadType === "universal6" &&
+          "Select 6 cards from the Major Arcana"}
+        {stage === "confirm" && "Confirm your selection"}
+        {stage === "result" && reading && "Your tarot reading is ready"}
       </Typography>
 
       <CardContainer>
         <AnimatePresence mode="wait">
-          {selectedCard === null ? (
-            // Display all cards when none is selected
-            <CardFan>
-              {tarotCards.map((card, index) => (
-                <CardWrapper
-                  key={card.id}
-                  $index={index}
-                  $total={tarotCards.length}
-                  onClick={() => handleCardClick(card.id)}
-                  whileHover={{
-                    y: -15,
-                    zIndex: 100, // Ensure hovered card is on top
-                    boxShadow:
-                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                    transition: { duration: 0.2 },
-                  }}
-                  initial={{
-                    opacity: 0,
-                    y: 20,
-                    rotate: (index - Math.floor(tarotCards.length / 2)) * 2, // Slight rotation for fan effect
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    rotate: (index - Math.floor(tarotCards.length / 2)) * 2,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.5,
-                    y: -100,
-                    transition: { duration: 0.3 },
-                  }}
-                  transition={{
-                    duration: 0.3,
-                    delay: card.id * 0.05, // Staggered entrance
-                  }}
-                >
-                  <CardBack />
-                </CardWrapper>
-              ))}
-            </CardFan>
-          ) : (
-            // Selected card view
-            <Box
+          {stage === "question" ? (
+            // Display question form first
+            <QuestionForm onSubmit={handleQuestionSubmit} />
+          ) : stage === "spread" ? (
+            // Spread selection
+            <Paper
+              elevation={3}
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                p: 4,
+                borderRadius: 2,
+                maxWidth: 600,
                 width: "100%",
+                textAlign: "center",
               }}
             >
-              <motion.div
-                key="selected-card"
-                initial={{ scale: 1 }}
-                animate={{
-                  scale: [1, 1.2, 1.2, 1.2, 1.5],
-                  rotateY: [0, 0, 180, 180, 180],
-                  transition: { duration: 1.5, times: [0, 0.2, 0.5, 0.8, 1] },
-                }}
-                style={{
-                  width: 120,
-                  height: 200,
-                  position: "relative",
-                  transformStyle: "preserve-3d",
-                }}
-              >
-                <CardBack />
-                <CardFront>
-                  <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                    {tarotCards[selectedCard].name}
-                  </Typography>
-                  <Box
-                    sx={{
-                      height: "100px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Typography variant="body2">
-                      Card #{selectedCard + 1}
-                    </Typography>
-                  </Box>
-                </CardFront>
-              </motion.div>
+              <Typography variant="h5" gutterBottom>
+                Choose Your Reading Type
+              </Typography>
 
-              <motion.div
-                initial={{ opacity: 0, y: 0 }}
-                animate={{ opacity: 1, y: 20 }}
-                transition={{ delay: 1.2, duration: 0.5 }}
-                style={{ marginTop: "40px" }}
+              <Typography variant="body2" sx={{ mb: 4 }}>
+                Select the type of reading you&apos;d like to receive
+              </Typography>
+
+              <ToggleButtonGroup
+                value={spreadType}
+                exclusive
+                onChange={handleSpreadTypeChange}
+                aria-label="spread type"
+                sx={{ mb: 4 }}
               >
-                <Button variant="outlined" onClick={handleReset}>
-                  Return to all cards
-                </Button>
-              </motion.div>
+                <ToggleButton value="single" aria-label="single card">
+                  Single Card
+                </ToggleButton>
+                <ToggleButton
+                  value="universal6"
+                  aria-label="universal 6 card spread"
+                >
+                  Universal 6 Card Spread
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              {spreadType === "single" && (
+                <Box sx={{ mb: 3, textAlign: "left" }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Single Card Reading
+                  </Typography>
+                  <Typography variant="body2">
+                    A simple but powerful reading focused on your specific
+                    question. Select one card to receive guidance.
+                  </Typography>
+                </Box>
+              )}
+
+              {spreadType === "universal6" && (
+                <Box sx={{ mb: 3, textAlign: "left" }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Universal 6 Card Spread
+                  </Typography>
+                  <Typography variant="body2">
+                    A comprehensive reading that has been consulted over 200
+                    million times since 2002. This spread uses the Major Arcana
+                    cards to provide insight into six different aspects of your
+                    situation:
+                  </Typography>
+                  <ol>
+                    {positionDescriptions.map((desc, i) => (
+                      <li key={i}>
+                        <Typography variant="body2">{desc}</Typography>
+                      </li>
+                    ))}
+                  </ol>
+                </Box>
+              )}
+
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setStage("card")}
+              >
+                Continue to Card Selection
+              </Button>
+            </Paper>
+          ) : stage === "card" ? (
+            // Display cards for selection
+            <TarotCardDeck
+              isClient={isClient}
+              onCardClick={handleCardClick}
+              spreadType={spreadType}
+              onMultipleCardsSelected={handleMultipleCardsSelected}
+            />
+          ) : stage === "confirm" &&
+            (spreadType === "universal6"
+              ? selectedCardIds.length === 6
+              : selectedCardId !== null) ? (
+            // Card confirmation view
+            <ReadingForm
+              selectedCardId={selectedCardId || undefined}
+              selectedCardIds={selectedCardIds}
+              userInfo={userInfo}
+              question={question}
+              onSubmit={handleReadingSubmit}
+              onGoBack={handleGoBackToCards}
+              spreadType={spreadType}
+            />
+          ) : reading ? (
+            // Reading result
+            <ReadingResult
+              selectedCardId={selectedCardId || undefined}
+              selectedCardIds={selectedCardIds}
+              question={question}
+              reading={reading}
+              onNewReading={handleReset}
+              onSaveReading={handleSaveAndClose}
+              spreadType={spreadType}
+            />
+          ) : isLoading ? (
+            // Loading state
+            <Box sx={{ textAlign: "center" }}>
+              <CircularProgress />
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                Consulting the cards...
+              </Typography>
+            </Box>
+          ) : (
+            // Error state or unexpected state
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="h6" color="error" sx={{ mt: 2 }}>
+                {error || "Something went wrong. Please try again."}
+              </Typography>
+              <Button variant="outlined" onClick={handleReset} sx={{ mt: 2 }}>
+                Try Again
+              </Button>
             </Box>
           )}
         </AnimatePresence>
@@ -230,3 +285,13 @@ export default function ReadPage() {
     </Box>
   );
 }
+
+// Position descriptions for Universal 6 Card Spread (duplicated from other components for convenience)
+const positionDescriptions = [
+  "How you feel about yourself now",
+  "What you most want at this moment",
+  "Your fears",
+  "What is going for you",
+  "What is going against you",
+  "The outcome according to your current situation",
+];
