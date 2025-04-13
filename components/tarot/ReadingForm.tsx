@@ -9,9 +9,11 @@ import {
   Card,
   CardMedia,
   CardContent,
+  Chip,
 } from "@mui/material";
 import { tarotCards } from "./TarotData";
 import Image from "next/image";
+import StarsIcon from "@mui/icons-material/Stars";
 
 interface ReadingFormProps {
   selectedCardId?: number; // Single card ID (legacy support)
@@ -21,6 +23,7 @@ interface ReadingFormProps {
   onSubmit: () => void;
   onGoBack: () => void;
   spreadType?: "single" | "universal6";
+  isPremium?: boolean;
 }
 
 // Position descriptions for Universal 6 Card Spread
@@ -40,6 +43,7 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
   onSubmit,
   onGoBack,
   spreadType = "single",
+  isPremium = false,
 }) => {
   // Use selectedCardIds if provided, otherwise create a single-item array from selectedCardId
   const cardIds =
@@ -62,11 +66,30 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.5 }}
       >
-        <Typography variant="h5" gutterBottom align="center">
-          {spreadType === "universal6"
-            ? "Universal 6 Card Spread"
-            : "Card Selection"}
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h5" align="center">
+            {spreadType === "universal6"
+              ? "Universal 6 Card Spread"
+              : "Card Selection"}
+          </Typography>
+
+          {isPremium && (
+            <Chip
+              icon={<StarsIcon />}
+              label="Premium"
+              color="primary"
+              size="small"
+              sx={{ ml: 2 }}
+            />
+          )}
+        </Box>
 
         {spreadType === "universal6" && (
           <Typography variant="body2" align="center" sx={{ mb: 3 }}>
@@ -83,6 +106,32 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
             {question}
           </Typography>
         </Box>
+
+        {isPremium && (
+          <Box
+            sx={{
+              mb: 3,
+              p: 2,
+              bgcolor: "rgba(156, 39, 176, 0.05)",
+              borderRadius: 2,
+              border: "1px solid rgba(156, 39, 176, 0.2)",
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              color="primary"
+              sx={{ display: "flex", alignItems: "center" }}
+            >
+              <StarsIcon fontSize="small" sx={{ mr: 1 }} />
+              Premium Reading
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {spreadType === "universal6"
+                ? "You've selected a premium reading which includes comprehensive analysis of all six positions with personalized insights and detailed guidance."
+                : "You've selected a premium reading with in-depth personalized insights and detailed analysis of your card."}
+            </Typography>
+          </Box>
+        )}
 
         {spreadType === "universal6" ? (
           <Grid container spacing={2} sx={{ mt: 2 }}>
@@ -179,8 +228,15 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
         )}
 
         <Typography variant="body2" sx={{ mt: 4 }} align="center">
-          Would you like to receive a reading with{" "}
+          Would you like to receive a{isPremium ? " premium" : ""} reading with{" "}
           {spreadType === "universal6" ? "these cards" : "this card"}?
+          {isPremium && (
+            <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+              {spreadType === "single"
+                ? "You will be directed to the payment page ($3.00)"
+                : "You will be directed to the payment page ($3.00)"}
+            </Typography>
+          )}
         </Typography>
 
         <Box
@@ -193,8 +249,13 @@ export const ReadingForm: React.FC<ReadingFormProps> = ({
           <Button variant="outlined" onClick={onGoBack}>
             Go Back
           </Button>
-          <Button variant="contained" color="primary" onClick={onSubmit}>
-            Get Reading
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={onSubmit}
+            startIcon={isPremium ? <StarsIcon /> : undefined}
+          >
+            {isPremium ? "Continue to Payment" : "Get Reading"}
           </Button>
         </Box>
       </motion.div>

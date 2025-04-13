@@ -677,6 +677,13 @@
   resolved "https://registry.yarnpkg.com/@types/ms/-/ms-2.1.0.tgz#052aa67a48eccc4309d7f0191b7e41434b90bb78"
   integrity sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==
 
+"@types/node@>=8.1.0":
+  version "22.14.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.14.1.tgz#53b54585cec81c21eee3697521e31312d6ca1e6f"
+  integrity sha512-u0HuPQwe/dHrItgHHpmw3N2fYCR6x4ivMNbPHRkBVP4CvN+kiRrKHWk3i8tXiO/joPwXLMYvF9TTF0eqgHIuOw==
+  dependencies:
+    undici-types "~6.21.0"
+
 "@types/node@^20":
   version "20.17.22"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.17.22.tgz#18e463b500af6e6d407d2a0084dfc244ef3c8d06"
@@ -2911,6 +2918,13 @@ punycode@^2.1.0:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.3.1.tgz#027422e2faec0b25e1549c3e1bd8309b9133b6e5"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
+qs@^6.11.0:
+  version "6.14.0"
+  resolved "https://registry.yarnpkg.com/qs/-/qs-6.14.0.tgz#c63fa40680d2c5c941412a0e899c89af60c0a930"
+  integrity sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==
+  dependencies:
+    side-channel "^1.1.0"
+
 queue-microtask@^1.2.2:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/queue-microtask/-/queue-microtask-1.2.3.tgz#4929228bbc724dfac43e0efb058caf7b6cfb6243"
@@ -3330,6 +3344,14 @@ strip-json-comments@^3.1.1:
   resolved "https://registry.yarnpkg.com/strip-json-comments/-/strip-json-comments-3.1.1.tgz#31f1281b3832630434831c310c01cccda8cbe006"
   integrity sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==
 
+stripe@^18.0.0:
+  version "18.0.0"
+  resolved "https://registry.yarnpkg.com/stripe/-/stripe-18.0.0.tgz#1efc7a102b3b4fb5146a68b46299b0cae2d35470"
+  integrity sha512-3Fs33IzKUby//9kCkCa1uRpinAoTvj6rJgQ2jrBEysoxEvfsclvXdna1amyEYbA2EKkjynuB4+L/kleCCaWTpA==
+  dependencies:
+    "@types/node" ">=8.1.0"
+    qs "^6.11.0"
+
 style-to-js@^1.0.0:
   version "1.1.16"
   resolved "https://registry.yarnpkg.com/style-to-js/-/style-to-js-1.1.16.tgz#e6bd6cd29e250bcf8fa5e6591d07ced7575dbe7a"
@@ -3489,6 +3511,11 @@ undici-types@~6.19.2:
   version "6.19.8"
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.19.8.tgz#35111c9d1437ab83a7cdc0abae2f26d88eda0a02"
   integrity sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==
+
+undici-types@~6.21.0:
+  version "6.21.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.21.0.tgz#691d00af3909be93a7faa13be61b3a5b50ef12cb"
+  integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
 unified@^11.0.0:
   version "11.0.5"

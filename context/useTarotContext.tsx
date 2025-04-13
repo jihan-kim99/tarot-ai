@@ -39,7 +39,8 @@ interface TarotContextType {
     cards: TarotCard[],
     question: string,
     userInfo: string,
-    spreadType?: "single" | "universal6"
+    spreadType?: "single" | "universal6",
+    isPremium?: boolean
   ) => Promise<void>;
   clearReading: () => void;
   savePastReading: () => void;

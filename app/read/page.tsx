@@ -10,14 +10,20 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Paper,
+  Chip,
+  Card,
+  CardContent,
+  Grid,
 } from "@mui/material";
 import { useTarot } from "@/context/useTarotContext";
 import TarotCardDeck from "@/components/tarot/TarotCardDeck";
 import ReadingForm from "@/components/tarot/ReadingForm";
 import ReadingResult from "@/components/tarot/ReadingResult";
 import QuestionForm from "@/components/tarot/QuestionForm";
+import PaymentModal from "@/components/tarot/PaymentModal";
 import { CardContainer } from "@/components/tarot/StyledComponents";
 import { tarotCards } from "@/components/tarot/TarotData";
+import StarsIcon from "@mui/icons-material/Stars";
 
 export default function ReadPage() {
   // State for tracking selected cards
@@ -35,6 +41,10 @@ export default function ReadPage() {
   const [spreadType, setSpreadType] = useState<"single" | "universal6">(
     "single"
   );
+
+  // Payment related states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
   // Add clientSide state to prevent hydration mismatch
   const [isClient, setIsClient] = useState(false);
@@ -71,7 +81,7 @@ export default function ReadPage() {
       // Clear any previously selected cards
       setSelectedCardId(null);
       setSelectedCardIds([]);
-      setStage("card");
+      setIsPremium(false); // Reset premium status when spread type changes
     }
   };
 
@@ -94,12 +104,19 @@ export default function ReadPage() {
     setQuestion("");
     setUserInfo("");
     setSpreadType("single");
+    setIsPremium(false);
     setStage("question");
     clearReading();
   };
 
   // Submit the reading request to the API
   const handleReadingSubmit = async () => {
+    if (isPremium) {
+      // Show payment modal for premium reading
+      setShowPaymentModal(true);
+      return;
+    }
+
     if (spreadType === "universal6" && selectedCardIds.length === 6) {
       // Submit multiple cards for Universal 6 Card Spread
       const cards = selectedCardIds.map((id) => tarotCards[id]);
@@ -125,6 +142,94 @@ export default function ReadPage() {
     savePastReading();
     handleReset();
   };
+
+  // Handle payment modal close
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false);
+  };
+
+  // Check URL parameters for payment success continuation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldContinue = urlParams.get("continue") === "true";
+    const sessionId = urlParams.get("session_id");
+    // const isPremiumParam = urlParams.get("premium") === "true";
+
+    // Only process if this is a continuation after payment
+    if (shouldContinue && sessionId) {
+      // Get readingType from URL or localStorage
+      const urlReadingType = urlParams.get("readingType") as
+        | "single"
+        | "universal6"
+        | null;
+      const storedReadingType = localStorage.getItem("tarot_readingType") as
+        | "single"
+        | "universal6"
+        | null;
+      const readingTypeToUse = urlReadingType || storedReadingType || "single";
+
+      // Get question and userInfo from URL or localStorage
+      const urlQuestion = urlParams.get("question");
+      const urlUserInfo = urlParams.get("userInfo");
+      const storedQuestion = localStorage.getItem("tarot_question");
+      const storedUserInfo = localStorage.getItem("tarot_userInfo");
+      const questionToUse = urlQuestion || storedQuestion || "";
+      const userInfoToUse = urlUserInfo || storedUserInfo || "";
+
+      // Get cardIds from URL or localStorage
+      let cardIdsToUse: number[] = [];
+      const urlCardIds = urlParams.get("cardIds");
+      const storedCardIds = localStorage.getItem("tarot_cardIds");
+
+      if (urlCardIds) {
+        cardIdsToUse = urlCardIds.split(",").map((id) => parseInt(id, 10));
+      } else if (storedCardIds) {
+        cardIdsToUse = storedCardIds.split(",").map((id) => parseInt(id, 10));
+      }
+
+      // Set all the retrieved values in state
+      setSpreadType(readingTypeToUse);
+      setQuestion(questionToUse);
+      setUserInfo(userInfoToUse);
+      setIsPremium(true); // It's a premium reading if we're returning from payment
+
+      // Set card IDs based on reading type
+      if (readingTypeToUse === "single" && cardIdsToUse.length > 0) {
+        setSelectedCardId(cardIdsToUse[0]);
+        setSelectedCardIds([]);
+      } else if (
+        readingTypeToUse === "universal6" &&
+        cardIdsToUse.length === 6
+      ) {
+        setSelectedCardIds(cardIdsToUse);
+        setSelectedCardId(null);
+      }
+
+      // Automatically submit the reading request
+      setTimeout(() => {
+        if (readingTypeToUse === "universal6" && cardIdsToUse.length === 6) {
+          // Submit multiple cards for Universal 6 Card Spread
+          const cards = cardIdsToUse.map((id) => tarotCards[id]);
+          getReading(cards, questionToUse, userInfoToUse, "universal6", true);
+          setStage("result");
+        } else if (cardIdsToUse.length > 0) {
+          // Legacy single card reading
+          const card = tarotCards[cardIdsToUse[0]];
+          getReading([card], questionToUse, userInfoToUse, "single", true);
+          setStage("result");
+        }
+      }, 500);
+
+      // Clear localStorage after use
+      localStorage.removeItem("tarot_question");
+      localStorage.removeItem("tarot_userInfo");
+      localStorage.removeItem("tarot_cardIds");
+      localStorage.removeItem("tarot_readingType");
+
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   return (
     <Box sx={{ minHeight: "100vh", padding: 4, bgcolor: "#f5f5f5" }}>
@@ -186,6 +291,90 @@ export default function ReadPage() {
                   Universal 6 Card Spread
                 </ToggleButton>
               </ToggleButtonGroup>
+
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                  Select Reading Level
+                </Typography>
+
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Card
+                      onClick={() => setIsPremium(false)}
+                      sx={{
+                        cursor: "pointer",
+                        height: "100%",
+                        border: !isPremium
+                          ? "2px solid #9c27b0"
+                          : "1px solid rgba(0,0,0,0.12)",
+                        transition: "all 0.3s ease",
+                        "&:hover": { boxShadow: 3 },
+                      }}
+                    >
+                      <CardContent sx={{ textAlign: "left" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mb: 1,
+                          }}
+                        >
+                          <Typography variant="h6">Free</Typography>
+                          <Chip label="$0.00" color="default" size="small" />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Basic interpretation of your card selection
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Card
+                      onClick={() => setIsPremium(true)}
+                      sx={{
+                        cursor: "pointer",
+                        height: "100%",
+                        border: isPremium
+                          ? "2px solid #9c27b0"
+                          : "1px solid rgba(0,0,0,0.12)",
+                        transition: "all 0.3s ease",
+                        "&:hover": { boxShadow: 3 },
+                      }}
+                    >
+                      <CardContent sx={{ textAlign: "left" }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mb: 1,
+                          }}
+                        >
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <Typography variant="h6">Premium</Typography>
+                            <StarsIcon
+                              fontSize="small"
+                              color="primary"
+                              sx={{ ml: 0.5 }}
+                            />
+                          </Box>
+                          <Chip
+                            label={spreadType === "single" ? "$3.00" : "$3.00"}
+                            color="primary"
+                            size="small"
+                          />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {spreadType === "single"
+                            ? "Detailed personalized insights and analysis"
+                            : "Comprehensive analysis of all six positions"}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
 
               {spreadType === "single" && (
                 <Box sx={{ mb: 3, textAlign: "left" }}>
@@ -249,6 +438,7 @@ export default function ReadPage() {
               onSubmit={handleReadingSubmit}
               onGoBack={handleGoBackToCards}
               spreadType={spreadType}
+              isPremium={isPremium}
             />
           ) : reading ? (
             // Reading result
@@ -282,6 +472,22 @@ export default function ReadPage() {
           )}
         </AnimatePresence>
       </CardContainer>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        open={showPaymentModal}
+        onClose={handlePaymentModalClose}
+        readingType={spreadType}
+        question={question}
+        userInfo={userInfo}
+        cardIds={
+          spreadType === "single"
+            ? selectedCardId !== null
+              ? [selectedCardId]
+              : []
+            : selectedCardIds
+        }
+      />
     </Box>
   );
 }
