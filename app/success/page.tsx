@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense } from "react";
 import { redirect } from "next/navigation";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -14,7 +14,8 @@ import {
 import { motion } from "framer-motion";
 import Link from "next/link";
 
-export default function SuccessPage() {
+// Create a client component that uses useSearchParams
+function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const session_id = searchParams.get("session_id");
@@ -139,6 +140,27 @@ export default function SuccessPage() {
           </Button>
         </Paper>
       </motion.div>
+    </Container>
+  );
+}
+
+// Main page component with Suspense
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <SuccessContent />
+    </Suspense>
+  );
+}
+
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <Container maxWidth="md" sx={{ py: 8, textAlign: "center" }}>
+      <CircularProgress size={40} />
+      <Typography variant="h6" sx={{ mt: 2 }}>
+        Loading payment details...
+      </Typography>
     </Container>
   );
 }
